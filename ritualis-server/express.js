@@ -32,7 +32,7 @@ function initExpress () {
   })
 
   if (process.env.NODE_ENV === 'production') {
-    const distPath = path.join(path.resolve(), 'ritualis-frontend/dist')
+    const distPath = path.join(path.dirname(path.resolve()), 'ritualis-frontend/dist')
     app.use(express.static(distPath))
     app.get('*', (req, res) => {
       res.sendFile(path.join(distPath, '/index.html'))
