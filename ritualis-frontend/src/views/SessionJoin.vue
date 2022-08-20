@@ -28,7 +28,8 @@ onMounted(() => {
 })
 
 const initWebsocket = () => {
-  state.ws = new WebSocket('ws://localhost:3001/')
+  const HOST = !location.origin.includes("localhost") ? location.origin.replace(/^http/, 'ws') : 'ws://localhost:3001/'
+  state.ws = new WebSocket(HOST)
   state.ws.onmessage = (event) => {
 
     const response = JSON.parse(event.data)
