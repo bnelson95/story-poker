@@ -1,0 +1,33 @@
+{
+  "name": "ritualis-server",
+  "version": "1.0.0",
+  "description": "",
+  "author": "Blake Nelson",
+  "scripts": {
+    "dev": "nodemon server.js",
+    "start": "node server.js"
+  },
+  "main": "server.js",
+  "dependencies": {
+    "body-parser": "^1.19.0",
+    "cookie-parser": "^1.4.5",
+    "cors": "^2.8.5",
+    "express": "^4.17.1",
+    "mongoose": "^5.9.17",
+    "morgan": "^1.10.0",
+    "ws": "^8.8.1"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.16.7",
+    "@babel/preset-env": "^7.16.8",
+    "nodemon": "^2.0.4"
+  },
+  "keywords": [],
+  "license": "ISC",
+  "type": "module",
+  "standard": {
+    "ignore": [
+      "**/client/dist/js/"
+    ]
+  }
+}

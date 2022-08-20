@@ -1,0 +1,17 @@
+{
+  "name": "ritualis",
+  "version": "1.0.0",
+  "description": "",
+  "author": "Blake Nelson",
+  "scripts": {
+    "build": "npm install --prefix ritualis-frontend && npm run build --prefix ritualis-frontend",
+    "dev": "concurrently \"cd ritualis-server && npm run dev\" \"cd ritualis-frontend && npm run dev\" ",
+    "start": "node ritualis-server/server.js"
+  },
+  "license": "ISC",
+  "devDependencies": {
+    "concurrently": "^7.3.0",
+    "nodemon": "^2.0.19",
+    "serve": "^14.0.1"
+  }
+}
