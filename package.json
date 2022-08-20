@@ -6,7 +6,7 @@
   "scripts": {
     "build": "cd ritualis-frontend && npm install && npm run build",
     "dev": "concurrently \"cd ritualis-server && npm run dev\" \"cd ritualis-frontend && npm run dev\" ",
-    "start": "node ritualis-server/server.js"
+    "start": "cd ritualis-server && npm run start"
   },
   "license": "ISC",
   "devDependencies": {
