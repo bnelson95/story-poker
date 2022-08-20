@@ -4,7 +4,9 @@
   "description": "",
   "author": "Blake Nelson",
   "scripts": {
-    "build": "cd ritualis-frontend && npm install && npm run build",
+    "build-frontend": "cd ritualis-frontend && npm install && npm run build",
+    "build-server": "cd ritualis-server && npm install",
+    "build": "concurrently \"npm run build-frontend\" \"npm run build-server\"",
     "dev": "concurrently \"cd ritualis-server && npm run dev\" \"cd ritualis-frontend && npm run dev\" ",
     "start": "cd ritualis-server && npm run start"
   },
