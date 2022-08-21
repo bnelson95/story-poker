@@ -31,13 +31,13 @@ function guid() {
     return (S4() + S4() + "-" + S4() + "-4" + S4().substr(0,3) + "-" + S4() + "-" + S4() + S4() + S4()).toLowerCase()
 }
 
-function initWebsocketServer(port) {
+function initWebsocketServer(server) {
 
     const clients = {}
     // TODO eventually store the sessions in DB instead of memory
     // const sessions = {}
     
-    const wss = new WebSocketServer({ port: port })
+    const wss = new WebSocketServer({ server })
     
     wss.on("connection", (ws) => {
         
@@ -135,8 +135,6 @@ function initWebsocketServer(port) {
         sendJson(ws, CONNECT, { "clientId": newClientId })
         
     })
-
-    console.log(`Websocket listening at http://localhost:${port}`)
 
     return wss
 }
