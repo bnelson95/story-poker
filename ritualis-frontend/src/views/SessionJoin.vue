@@ -3,6 +3,7 @@ import { ref, reactive, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 
 import SessionService from '@/services/SessionService'
+import router from '@/router';
 
 const CONNECT = "connect"
 const CREATE = "create"
@@ -28,7 +29,21 @@ onMounted(() => {
 })
 
 const initWebsocket = () => {
-  state.ws = new WebSocket(location.origin.replace(/^http/, 'ws'))
+  state.ws = new WebSocket(location.origin.replace(/^http/, 'ws') + '/ws')
+  state.ws.onclose = function(e) {
+    console.log('Socket is closed.', e.reason);
+    console.log('localStorage.sessionId: ' + localStorage.sessionId)
+    console.log('route.params.id: ' + route.params.id)
+    console.log('localStorage.originalClientId: ' + localStorage.originalClientId)
+    console.log('state.clientId: ' + state.clientId)
+    if (localStorage.sessionId === route.params.id && localStorage.originalClientId === state.clientId) {
+      console.log('Reconnect will be attempted becuase you still have the same client ID.')
+      initWebsocket()
+    } else {
+      console.log('Pushing you back to home page becuase your browser joined with a differnt client ID.')
+      router.push({ name: 'session-init'})
+    }
+  }
   state.ws.onmessage = (event) => {
 
     const response = JSON.parse(event.data)
@@ -37,14 +52,22 @@ const initWebsocket = () => {
 
     if (response.method === CONNECT) {
       state.clientId = response.clientId
+
+      // if the original client ID has already been set and this is the same session, then auto-join
+      if (localStorage.originalClientId && localStorage.sessionId == route.params.id && localStorage.name) {
+        inputName.value = localStorage.name
+        joinSession()
+      }
     }
 
     if (response.method === CREATE) {
       state.session = response.session
+      localStorage.originalClientId = state.clientId
     }
 
     if (response.method === JOIN) {
       state.session = response.session
+      localStorage.originalClientId = state.clientId
     }
 
     if (response.method === MESSAGE) {
@@ -63,33 +86,36 @@ const initWebsocket = () => {
       state.session = response.session
     }
   }
-
-
 }
 
-
-
-function sendJson(ws: WebSocket, method: string, obj: any) {
-  ws.send(JSON.stringify({ "method": method, ...obj }))
+function sendJson(ws: WebSocket, method: string, sessionId: string, obj: any) {
+  ws.send(JSON.stringify({ method, sessionId, ...obj }))
 }
-
-
 
 const createSession = () => {
-  sendJson(state.ws, CREATE, {
-    "sessionId": route.params.id,
+  sendJson(state.ws, CREATE, route.params.id as string, {
     "clientId": state.clientId,
-    "name": state.name,
+    "name": inputName.value,
     "options": state.options,
   })
+
+  localStorage.sessionId = route.params.id
+  if (inputName.value) {
+    localStorage.name = inputName.value
+  }
 }
 
 const joinSession = () => {
-  sendJson(state.ws, JOIN, {
-    "sessionId": route.params.id,
+  sendJson(state.ws, JOIN, route.params.id as string, {
     "clientId": state.clientId,
-    "name": state.name,
+    "name": inputName.value,
+    ...(localStorage.sessionId == route.params.id && {"originalClientId": localStorage.originalClientId})
   })
+
+  localStorage.sessionId = route.params.id
+  if (inputName.value) {
+    localStorage.name = inputName.value
+  }
 }
 
 // const sendMessage = () => {
@@ -103,19 +129,18 @@ const joinSession = () => {
 // }
 
 const vote = (vote: number) => {
-  sendJson(state.ws, VOTE, {
-    "sessionId": state.session._id,
+  sendJson(state.ws, VOTE, state.session._id, {
     "clientId": state.clientId,
     "vote": vote
   })
 }
 
 const showVotes = () => {
-  sendJson(state.ws, SHOW_VOTES, { "sessionId": state.session._id })
+  sendJson(state.ws, SHOW_VOTES, state.session._id, {})
 }
 
 const clearVotes = () => {
-  sendJson(state.ws, CLEAR_VOTES, { "sessionId": state.session._id })
+  sendJson(state.ws, CLEAR_VOTES, state.session._id, {})
 }
 
 const clientIds = computed(() => {
@@ -134,12 +159,19 @@ const consensus = computed(() => {
   return state.session.showVotes && state.session.clients.every((c: any) => c.vote == state.session.clients[0].vote)
 })
 
+const name = computed(() => {
+  if (!state.session.clients) return ''
+  const client = state.session.clients.find((client: any) => client._id === state.clientId)
+  return client ? client.name : ''
+})
+
+let inputName = ref('')
+
 const state = reactive({
   ws: {} as WebSocket,
   clientId: "",
   formCreate: false,
   formJoin: false,
-  name: "",
   options: "",
   session: {} as any,
   description: "",
@@ -149,6 +181,7 @@ const state = reactive({
 
 <template>
   <div>
+    {{ state.clientId }}
     <!-- Form for Create -->
     <div v-if="clientIds.length == 0">
       <h2 class="my-3">Create a new session...</h2>
@@ -156,7 +189,7 @@ const state = reactive({
         <div class="row">
           <div class="col-md">
             <div class="form-floating mb-3">
-              <input v-model="state.name" type="text" class="form-control" id="nameInput" placeholder="Name" />
+              <input v-model="inputName" type="text" class="form-control" id="nameInput" placeholder="Name" />
               <label for="nameInput">Your name</label>
             </div>
           </div>
@@ -167,24 +200,24 @@ const state = reactive({
             </div>
           </div>
         </div>
-        <button class="btn btn-primary" :disabled="!state.name || !state.options">Join Session</button>
+        <button class="btn btn-primary" :disabled="!inputName || !state.options">Join Session</button>
       </form>
     </div>
     <div v-else-if="!clientIds.includes(state.clientId)">
       <h2 class="mb-3">Join an existing session...</h2>
       <form @submit.prevent="joinSession">
         <div class="form-floating mb-3">
-          <input v-model="state.name" type="text" class="form-control" id="nameInput" placeholder="Name" />
+          <input v-model="inputName" type="text" class="form-control" id="nameInput" placeholder="Name" />
           <label for="nameInput">Name</label>
         </div>
-        <button class="btn btn-primary" :disabled="!state.name">Join Session</button>
+        <button class="btn btn-primary" :disabled="!inputName">Join Session</button>
       </form>
     </div>
 
     <!-- Session -->
     <div v-if="state.session._id && clientIds.includes(state.clientId)" class="row">
       <div class="col-12">
-        <h2 class="my-3">{{ state.name }}</h2>
+        <h2 class="my-3">{{ name }}</h2>
         <div class="form-floating mb-3">
           <input v-model="state.description" type="text" class="form-control" id="descriptionInput" placeholder="Description" />
           <label for="descriptionInput">Task Description</label>

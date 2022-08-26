@@ -19,23 +19,85 @@ function sendJson(ws, method, obj) {
 function broadcastJson(clients, session, method, obj) {
     // Broadcast means Send to all clients of a given session.
     session.clients.forEach(client => {
-        sendJson(clients[client._id].ws, method, obj)
+        if (client._id in clients) {
+            sendJson(clients[client._id].ws, method, obj)
+        } else {
+            // Somehow the session still has a client that's not in the clients map
+        }
     })
 }
 
-// TODO use built in guid/hash function
-function S4() {
-    return (((1+Math.random())*0x10000)|0).toString(16).substring(1); 
+async function init_session(result, clients) {
+    const session = await Session.findById(result.sessionId)
+
+    session.clients.push({
+        "_id": result.clientId,
+        "name": result.name,
+        "vote": 0,
+    })
+    session.options = result.options.split(',')
+
+    session.save()
+
+    sendJson(clients[result.clientId].ws, CREATE, { session })
 }
-function guid() {
-    return (S4() + S4() + "-" + S4() + "-4" + S4().substr(0,3) + "-" + S4() + "-" + S4() + S4() + S4()).toLowerCase()
+
+async function join_session(result, clients) {
+    const session = await Session.findById(result.sessionId)
+
+    const client = session.clients.find(client => client._id === result.originalClientId ?? '')
+    if (client) {
+        // Remove old client from the session
+        console.log(session.clients)
+        console.log(result.clientId)
+        client._id = result.clientId
+        // Remove old client from the clientId -> websocket map
+        if (result.originalClientId in clients) {
+            clients[result.originalClientId].ws.close()
+            delete clients[result.originalClientId]
+        }
+    } else {
+        session.clients.push({
+            "_id": result.clientId,
+            "name": result.name,
+            "vote": 0,
+        })
+    }
+
+    session.save()
+
+    // TODO maybe just send the new client instead of the whole session?
+    broadcastJson(clients, session, JOIN, { session })
+}
+
+async function handle_message(result, clients) {
+    const session = await Session.findById(result.sessionId)
+    const message = {
+        "clientId": result.clientId,
+        "message": result.message,
+        "timestamp": Date.now(),
+    }
+
+    session.messages.push(message)
+
+    session.save()
+
+    broadcastJson(clients, session, MESSAGE, message)
+}
+
+async function vote(result, clients) {
+    const session = await Session.findById(result.sessionId)
+    const client = session.clients.find(client => client._id === result.clientId)
+    client.vote = result.vote
+
+    session.save()
+
+    broadcastJson(clients, session, VOTE, { client })
 }
 
 function initWebsocketServer(server) {
 
     const clients = {}
-    // TODO eventually store the sessions in DB instead of memory
-    // const sessions = {}
     
     const wss = new WebSocketServer({ server })
     
@@ -53,58 +115,19 @@ function initWebsocketServer(server) {
             console.log(result)
             
             if (result.method === CREATE) {
-                const session = await Session.findById(result.sessionId)
-
-                session.clients.push({
-                    "_id": result.clientId,
-                    "name": result.name,
-                    "vote": 0,
-                })
-                session.options = result.options.split(',')
-
-                session.save()
-
-                sendJson(clients[result.clientId].ws, CREATE, { session })
+                await init_session(result, clients)
             }
             
             if (result.method === JOIN) {
-                const session = await Session.findById(result.sessionId)
-                
-                session.clients.push({
-                    "_id": result.clientId,
-                    "name": result.name,
-                    "vote": 0,
-                })
-
-                session.save()
-
-                // TODO maybe just send the new client instead of the whole session?
-                broadcastJson(clients, session, JOIN, { session })
+                await join_session(result, clients)
             }
             
             if (result.method === MESSAGE) {
-                const session = await Session.findById(result.sessionId)
-                const message = {
-                    "clientId": result.clientId,
-                    "message": result.message,
-                    "timestamp": Date.now(),
-                }
-
-                session.messages.push(message)
-
-                session.save()
-                
-                broadcastJson(clients, session, MESSAGE, message)
+                await handle_message(result, clients)
             }
 
             if (result.method === VOTE) {
-                const session = await Session.findById(result.sessionId)
-                const client = session.clients.find(client => client._id === result.clientId)
-                client.vote = result.vote
-
-                session.save()
-
-                broadcastJson(clients, session, VOTE, { client })
+                await vote(result, clients)
             }
 
             if (result.method === SHOW_VOTES) {
@@ -130,7 +153,7 @@ function initWebsocketServer(server) {
         })
         
         // Generate a new client id and send back the client "connect" event.
-        const newClientId = guid();
+        const newClientId = (Math.random() + 1).toString(36).substring(7)
         clients[newClientId] = { ws }
         sendJson(ws, CONNECT, { "clientId": newClientId })
         
