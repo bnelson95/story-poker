@@ -20,6 +20,9 @@ const SessionSchema = new mongoose.Schema({
   clients: [{
     type: ClientSchema,
   }],
+  description: {
+    type: String,
+  },
   host: {
     type: String,
   },

@@ -7,18 +7,20 @@ const clients = {}
 const CONNECT = "connect"
 const CREATE = "create"
 const JOIN = "join"
+const UPDATE_DESCRIPTION = "update_description"
 const MESSAGE = "message"
 const VOTE = "vote"
 const SHOW_VOTES = "show_votes"
 const CLEAR_VOTES = "clear_votes"
 
 const FN_MAP = {
-    [CREATE]:      init_session,
-    [JOIN]:        join_session,
-    [MESSAGE]:     handle_message,
-    [VOTE]:        vote,
-    [SHOW_VOTES]:  showVotes,
-    [CLEAR_VOTES]: clearVotes,
+    [CREATE]:             init_session,
+    [JOIN]:               join_session,
+    [UPDATE_DESCRIPTION]: update_description,
+    [MESSAGE]:            handle_message,
+    [VOTE]:               vote,
+    [SHOW_VOTES]:         showVotes,
+    [CLEAR_VOTES]:        clearVotes,
 }
 
 function sendJson(ws, method, obj) {
@@ -76,6 +78,14 @@ async function join_session(result, clients) {
 
     // TODO maybe just send the new client instead of the whole session?
     broadcastJson(clients, session, JOIN, { session })
+}
+
+async function update_description(result, clients) {
+    const session = await Session.findById(result.sessionId)
+    session.description = result.description
+    session.save()
+
+    broadcastJson(clients, session, UPDATE_DESCRIPTION, { description: session.description })
 }
 
 async function handle_message(result, clients) {
