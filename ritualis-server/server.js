@@ -17,4 +17,6 @@ mongoose.connect(MONGO_URI, mongoOptions).then(async () => {
   const server = app.listen(PORT, () => console.log(`App listening at http://localhost:${PORT}`))
   
   const wss = initWebsocketServer(server)
+
+  console.log(`Websocket listening at ws://localhost:${PORT}`)
 })
