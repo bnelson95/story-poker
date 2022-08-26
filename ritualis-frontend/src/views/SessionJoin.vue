@@ -27,6 +27,14 @@ watch(description, async (newDescription, _) => {
   inputDescription.value = newDescription
 })
 
+watch(inputDescription, async (newDescription, oldDescription) => {
+  // Send immediately if more than one character changes at once
+  // (i.e. a longer value was pasted, or the whole value was erased)
+  if (Math.abs(newDescription.length - oldDescription.length) >= 2) {
+    updateDescription(route.params.id as string, newDescription)
+  }
+})
+
 </script>
 
 <template>
