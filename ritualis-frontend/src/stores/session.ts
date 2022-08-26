@@ -17,11 +17,19 @@ export const useSessionStore = defineStore({
       console.log("Client IDs: " + ids)
       return ids
     },
-    name(state): string {
-      if (!state.session.clients) return ''
+    client(state) {
+      if (!state.session.clients) return null
       const wsStore = useWebsocketStore()
       const client = state.session.clients.find((client: any) => client._id === wsStore.clientId)
+      return client
+    },
+    name(state): string {
+      const client = this.client
       return client ? client.name : ''
+    },
+    myVote(state): string {
+      const client = this.client
+      return client ? client.vote : ''
     },
     description(state): string {
       if (!state.session) return ''

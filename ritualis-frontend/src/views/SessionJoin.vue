@@ -7,7 +7,7 @@ import { useSessionStore } from '@/stores/session'
 import { useWebsocketStore } from '@/stores/websocket';
 
 // Session Store
-const { session, loading, error, clientIds, name, isHost, description } = storeToRefs(useSessionStore())
+const { session, loading, error, clientIds, name, myVote, isHost, description } = storeToRefs(useSessionStore())
 const { fetchSession } = useSessionStore()
 
 // Websocket Store
@@ -84,16 +84,12 @@ watch(inputDescription, async (newDescription, oldDescription) => {
         </div>
       </div>
 
-      <div class="col-md-8">
+      <div class="col-md-6">
         <div v-if="isHost" class="btn-group mb-3 w-100">
-          <button v-on:click="showVotes(route.params.id as string)" type="button" class="btn btn-outline-secondary">Show Votes</button>
-          <button v-on:click="clearVotes(route.params.id as string)" type="button" class="btn btn-outline-secondary">Clear Votes</button>
-        </div>
-
-        <div class="btn-group mb-3 w-100">
-          <button v-for="n in session.options" v-on:click="vote(route.params.id as string, n)" type="button" class="btn btn-outline-primary">
-            {{ n }}
-          </button>
+          <button v-on:click="showVotes(route.params.id as string)" type="button" class="btn btn-outline-secondary">Show
+            Votes</button>
+          <button v-on:click="clearVotes(route.params.id as string)" type="button"
+            class="btn btn-outline-secondary">Clear Votes</button>
         </div>
 
         <div class="mb-3">
@@ -118,8 +114,17 @@ watch(inputDescription, async (newDescription, oldDescription) => {
         </div>
       </div>
 
-      <div class="col-md-4 mb-3">
-        <div class="border rounded bg-light p-1">
+      <div class="col-md-6 mb-3">
+        <div class="row g-3">
+          <div v-for="n in session.options" class="col-3">
+            <button v-on:click="vote(route.params.id as string, n)" type="button"
+              class="btn btn-lg btn-outline-primary w-100 py-5"
+              :class="{'active': myVote == n}">
+              {{ n }}
+            </button>
+          </div>
+        </div>
+        <div class="border rounded bg-light p-1 my-3">
           <table class="table table-borderless m-0">
             <thead>
               <tr>
