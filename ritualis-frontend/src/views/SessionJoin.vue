@@ -6,9 +6,11 @@ import { storeToRefs } from 'pinia'
 import { useSessionStore } from '@/stores/session'
 import { useWebsocketStore } from '@/stores/websocket';
 
+// Session Store
 const { session, loading, error, clientIds, name, isHost, description } = storeToRefs(useSessionStore())
 const { fetchSession } = useSessionStore()
 
+// Websocket Store
 const { clientId } = storeToRefs(useWebsocketStore())
 const { initWebsocket, createSession, joinSession, updateDescription, vote, showVotes, clearVotes } = useWebsocketStore()
 
@@ -23,10 +25,6 @@ const inputDescription = ref('')
 
 watch(description, async (newDescription, _) => {
   inputDescription.value = newDescription
-})
-
-watch(inputDescription, async (newDescription, _) => {
-  updateDescription(route.params.id as string, newDescription)
 })
 
 </script>
@@ -73,7 +71,7 @@ watch(inputDescription, async (newDescription, _) => {
         <h2 class="my-3">{{ name }}</h2>
         <div class="form-floating mb-3">
           <input v-model="inputDescription" type="text" class="form-control" id="descriptionInput"
-            placeholder="Description" />
+            placeholder="Description" v-on:focusout="updateDescription(route.params.id as string, inputDescription)" />
           <label for="descriptionInput">Task Description</label>
         </div>
       </div>
