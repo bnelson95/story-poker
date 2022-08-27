@@ -38,17 +38,17 @@ const state = reactive({
 <template>
 
   <!-- Create or Join -->
-  <div class="row my-3">
-    <div class="col-md border rounded p-3">
+  <div class="row my-4 justify-content-center">
+    <div class="col-md">
       <h3>Create a session...</h3>
       <div class="mt-3 input-group">
         <button class="btn btn-primary w-100" v-on:click="createSession">Create</button>
       </div>
     </div>
-    <div class="col-auto align-self-center">
-      <h4>OR</h4>
+    <div class="col-auto align-self-center p-3 m-3 bg-light rounded">
+      <h4 class="m-0">OR</h4>
     </div>
-    <div class="col-md border rounded p-3">
+    <div class="col-md">
       <h3>Join a session...</h3>
       <div class="mt-3 input-group">
         <input v-model="inputSessionId" type="text" class="form-control" id="sessionIdInput" placeholder="Session ID" />
