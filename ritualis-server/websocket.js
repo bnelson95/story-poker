@@ -107,6 +107,9 @@ async function vote(result, clients) {
     const session = await Session.findById(result.sessionId)
     const client = session.clients.find(client => client._id === result.clientId)
     client.vote = result.vote
+    if (session.clients.every(client => client.vote)) {
+        session.showVotes = true
+    }
     session.save()
 
     broadcastJson(clients, session, VOTE, { client })
