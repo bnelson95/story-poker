@@ -26,7 +26,7 @@ import { RouterLink, RouterView } from "vue-router";
 </script>
 
 <template>
-  <div>
+  <div class="my-bg container-fluid overflow-hidden vh-100 p-0">
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
       <div class="container-sm">
         <a class="navbar-brand" href="#">Story Poker</a>

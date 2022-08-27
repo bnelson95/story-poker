@@ -2,12 +2,13 @@
 import { ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { storeToRefs } from 'pinia'
+import ConfettiExplosion from "vue-confetti-explosion"
 
 import { useSessionStore } from '@/stores/session'
 import { useWebsocketStore } from '@/stores/websocket';
 
 // Session Store
-const { session, loading, error, clientIds, name, myVote, isHost, description } = storeToRefs(useSessionStore())
+const { session, loading, error, clientIds, consensus, myVote, description } = storeToRefs(useSessionStore())
 const { fetchSession } = useSessionStore()
 
 // Websocket Store
@@ -30,7 +31,7 @@ watch(description, async (newDescription, _) => {
 watch(inputDescription, async (newDescription, oldDescription) => {
   // Send immediately if more than one character changes at once
   // (i.e. a longer value was pasted, or the whole value was erased)
-  if (Math.abs(newDescription.length - oldDescription.length) >= 2) {
+  if (oldDescription && Math.abs(newDescription.length - oldDescription.length) >= 2) {
     updateDescription(route.params.id as string, newDescription)
   }
 })
@@ -41,110 +42,89 @@ watch(inputDescription, async (newDescription, oldDescription) => {
   <div v-if="!loading">
     {{ error }}
     <!-- Form for Create -->
-    <div v-if="clientIds.length == 0">
-      <h2 class="my-3">Create a new session...</h2>
-      <form @submit.prevent="createSession(route.params.id as string, inputName, inputOptions)">
-        <div class="row">
-          <div class="col-md">
-            <div class="form-floating mb-3">
-              <input v-model="inputName" type="text" class="form-control" id="nameInput" placeholder="Name" />
-              <label for="nameInput">Your name</label>
-            </div>
+    <div class="row justify-content-center">
+      <div v-if="clientIds.length == 0" class="col-lg-6 col-md-8 col-12">
+        <h2 class="my-4">Create a new session...</h2>
+        <form @submit.prevent="createSession(route.params.id as string, inputName, inputOptions)">
+          <div class="form-floating mb-4">
+            <input v-model="inputName" type="text" class="form-control" id="nameInput" placeholder="Name" />
+            <label for="nameInput">Your name</label>
           </div>
-          <div class="col-md">
-            <div class="form-floating mb-3">
-              <input v-model="inputOptions" type="text" class="form-control" id="optionsInput"
-                placeholder="Options (comma separated)" />
-              <label for="optionsInput">Vote Options (comma separated)</label>
-            </div>
+          <div class="form-floating mb-4">
+            <input v-model="inputOptions" type="text" class="form-control" id="optionsInput"
+              placeholder="Options (comma separated)" />
+            <label for="optionsInput">Vote Options (comma separated)</label>
           </div>
-        </div>
-        <button class="btn btn-primary" :disabled="!inputName || !inputOptions">Join Session</button>
-      </form>
-    </div>
-    <div v-else-if="!clientIds.includes(clientId)">
-      <h2 class="mb-3">Join an existing session...</h2>
-      <form @submit.prevent="joinSession(route.params.id as string, inputName)">
-        <div class="form-floating mb-3">
-          <input v-model="inputName" type="text" class="form-control" id="nameInput" placeholder="Name" />
-          <label for="nameInput">Name</label>
-        </div>
-        <button class="btn btn-primary" :disabled="!inputName">Join Session</button>
-      </form>
+          <button class="btn btn-primary" :disabled="!inputName || !inputOptions">Join Session</button>
+        </form>
+      </div>
+      <div v-else-if="!clientIds.includes(clientId)">
+        <h2 class="my-4">Join an existing session...</h2>
+        <form @submit.prevent="joinSession(route.params.id as string, inputName)">
+          <div class="form-floating mb-4">
+            <input v-model="inputName" type="text" class="form-control" id="nameInput" placeholder="Name" />
+            <label for="nameInput">Name</label>
+          </div>
+          <button class="btn btn-primary" :disabled="!inputName">Join Session</button>
+        </form>
+      </div>
     </div>
 
     <!-- Session -->
-    <div v-if="session._id && clientIds.includes(clientId)" class="row">
-      <div class="col-12">
-        <h2 class="my-3">{{ name }}</h2>
-        <div class="form-floating mb-3">
-          <input v-model="inputDescription" type="text" class="form-control" id="descriptionInput"
-            placeholder="Description" v-on:focusout="updateDescription(route.params.id as string, inputDescription)" />
-          <label for="descriptionInput">Task Description</label>
-        </div>
-      </div>
-
-      <div class="col-md-6">
-        <div v-if="isHost" class="btn-group mb-3 w-100">
-          <button v-on:click="showVotes(route.params.id as string)" type="button" class="btn btn-outline-secondary">Show
-            Votes</button>
-          <button v-on:click="clearVotes(route.params.id as string)" type="button"
-            class="btn btn-outline-secondary">Clear Votes</button>
-        </div>
-
-        <div class="mb-3">
-          <table class="table m-0">
-            <thead>
-              <tr>
-                <th scope="col">Name</th>
-                <th scope="col">Vote</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="user in session.clients">
-                <td>{{ user.name }}</td>
-                <td>
-                  <span v-if="user.vote">
-                    {{ session.showVotes || clientId == user._id ? user.vote : '?' }}
-                  </span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <div class="col-md-6 mb-3">
-        <div class="row g-3">
-          <div v-for="n in session.options" class="col-3">
-            <button v-on:click="vote(route.params.id as string, n)" type="button"
-              class="btn btn-lg btn-outline-primary w-100 py-5"
-              :class="{'active': myVote == n}">
-              {{ n }}
-            </button>
+    <div v-if="session._id && clientIds.includes(clientId)">
+      <!-- Description -->
+      <div class="row my-4">
+        <div class="col-12">
+          <div class="form-floating">
+            <input v-model="inputDescription" type="text" class="border-0 bg-light form-control" id="descriptionInput"
+              placeholder="Description" v-on:focusout="updateDescription(route.params.id as string, inputDescription.value)" />
+            <label for="descriptionInput">Task Description</label>
           </div>
         </div>
-        <div class="border rounded bg-light p-1 my-3">
-          <table class="table table-borderless m-0">
-            <thead>
-              <tr>
-                <th>Statistics</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Time taken</td>
-                <td>0</td>
-              </tr>
-              <tr>
-                <td>Average score</td>
-                <td>0</td>
-              </tr>
-            </tbody>
-          </table>
+      </div>
+      <!-- Vote Options -->
+      <div class="row pb-4 g-4 justify-content-center rounded">
+        <div v-for="n in session.options" class="col-lg-2 col-md-3 col-4">
+          <button v-on:click="vote(route.params.id as string, n)" type="button"
+            class="btn btn-lg btn-primary w-100 py-3"
+            :class="{'active': myVote == n}">
+            {{ n }}
+          </button>
         </div>
       </div>
-
+      <!-- Host Controls -->
+      <div class="row mb-4 g-4 justify-content-center">
+        <div class="col-lg-3 col-md-4 col-6">
+          <button v-on:click="showVotes(route.params.id as string)"
+            type="button" class="btn btn-secondary w-100">Show Votes</button>
+        </div>
+        <div class="col-lg-3 col-md-4 col-6">
+          <button v-on:click="clearVotes(route.params.id as string)"
+            type="button" class="btn btn-secondary w-100">Clear Votes</button>
+        </div>
+      </div>
+      <!-- Confetti -->
+      <div class="row justify-content-center">
+        <div class="col-1">
+          <ConfettiExplosion v-if="consensus" />
+        </div>
+      </div>
+      <!-- Members -->
+      <div class="row pb-3 px-2 g-4 justify-content-center rounded">
+        <div v-for="user in session.clients" class="col-lg-2 col-md-3 col-4">
+          <div class="p-3 text-center h-100 bg-light">
+            <h6>{{ user.name }}</h6>
+            <h4>
+              <span v-if="user.vote">
+                {{ session.showVotes || clientId == user._id ? user.vote : '✓' }}
+              </span>
+              <span v-else>
+                –
+              </span>
+            </h4>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
