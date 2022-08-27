@@ -3,6 +3,7 @@ import { ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import ConfettiExplosion from "vue-confetti-explosion"
+import contenteditable from 'vue-contenteditable'
 
 import { useSessionStore } from '@/stores/session'
 import { useWebsocketStore } from '@/stores/websocket';
@@ -35,6 +36,10 @@ watch(inputDescription, async (newDescription, oldDescription) => {
     updateDescription(route.params.id as string, newDescription)
   }
 })
+
+const descriptionFocusout = (e: any) => {
+  updateDescription(route.params.id as string, inputDescription.value)
+}
 
 </script>
 
@@ -73,13 +78,10 @@ watch(inputDescription, async (newDescription, oldDescription) => {
     <!-- Session -->
     <div v-if="session._id && clientIds.includes(clientId)">
       <!-- Description -->
-      <div class="row my-4">
-        <div class="col-12">
-          <div class="form-floating">
-            <input v-model="inputDescription" type="text" class="border-0 bg-light form-control" id="descriptionInput"
-              placeholder="Description" v-on:focusout="updateDescription(route.params.id as string, inputDescription.value)" />
-            <label for="descriptionInput">Task Description</label>
-          </div>
+      <div class="row my-4 justify-content-center rounded">
+        <div class="col-auto">
+          <contenteditable tag="div" class="p-3 bg-light rounded" placeholder="Story Description or Link"
+            v-model="inputDescription" :no-nl="true" :no-html="true" @focusout="descriptionFocusout" />
         </div>
       </div>
       <!-- Vote Options -->
@@ -128,3 +130,10 @@ watch(inputDescription, async (newDescription, oldDescription) => {
     </div>
   </div>
 </template>
+
+<style>
+[placeholder]:empty::before {
+  content: attr(placeholder);
+  color: #777;
+}
+</style>

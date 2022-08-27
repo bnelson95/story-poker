@@ -51,5 +51,8 @@ import { RouterLink, RouterView } from "vue-router";
   </div>
 </template>
 
-<style scoped>
+<style>
+[contenteditable]:hover {
+  cursor: text;
+}
 </style>
