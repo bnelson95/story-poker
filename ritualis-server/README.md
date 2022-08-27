@@ -1,1 +1,0 @@
-# ritualis-server
