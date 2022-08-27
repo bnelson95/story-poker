@@ -112,7 +112,7 @@ async function vote(result, clients) {
     }
     session.save()
 
-    broadcastJson(clients, session, VOTE, { client })
+    broadcastJson(clients, session, VOTE, { session })
 }
 
 async function showVotes(result, clients) {

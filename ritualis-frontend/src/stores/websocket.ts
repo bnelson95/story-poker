@@ -76,7 +76,7 @@ export const useWebsocketStore = defineStore({
       useSessionStore().session.messages.push(response)
     },
     onVote(response: any) {
-      useSessionStore().session.clients.find((client: any) => client._id === response.client._id).vote = response.client.vote
+      useSessionStore().session = response.session
     },
     onShowVotes(response: any) {
       useSessionStore().session.showVotes = true
